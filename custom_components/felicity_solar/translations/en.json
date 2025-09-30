@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Felicity Solar Setup",
+        "description": "Enter your Felicity Solar credentials and plant information",
+        "data": {
+          "username": "Username/Email",
+          "password": "Password", 
+          "plant_id": "Plant ID",
+          "scan_interval": "Scan Interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid username or password",
+      "cannot_connect": "Cannot connect to Felicity Solar API"
+    }
+  }
+}
