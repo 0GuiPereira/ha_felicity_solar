@@ -1,4 +1,7 @@
 DOMAIN = "felicity_solar"
 BASE_URL = "https://shine-api.felicitysolar.com"
 LOGIN_ENDPOINT = "/userlogin"
-DEVICE_ENDPOINT = "/device/get_device_realtime_icon_template_info"
+REFRESH_TOKEN_ENDPOINT = "/openApi/sec/refreshToken"
+PLANT_LIST_ENDPOINT = "/plant/list_plant"
+DEVICE_REALTIME_ENDPOINT = "/device/get_device_realtime_icon_template_info"
+ORGAN_CODE = "100000100001100000100000100008"
