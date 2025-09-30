@@ -9,9 +9,10 @@
 4. Search for "Felicity Solar"
 5. Enter your credentials:
    - **Username**: Your Felicity Solar email
-   - **Password**: Your Felicity Solar password  
-   - **Plant ID**: `11114725281235393` (default from your system)
+   - **Password Hash**: Your encrypted password hash (from network inspection)
    - **Scan Interval**: `30` seconds (default)
+   
+   **Note**: Plant ID is automatically detected from your account!
 
 ### Method 2: HACS Installation (Future)
 1. Add this repository as a custom repository in HACS
@@ -47,10 +48,17 @@ After setup, you'll get these sensors:
 3. Ensure internet connectivity to Felicity Solar API
 4. Try restarting the integration
 
+### How to get your Password Hash:
+1. Open browser developer tools (F12)
+2. Go to Network tab
+3. Login to Felicity Solar website
+4. Find the login request in network tab
+5. Copy the "password" value from the request body - this is your password hash
+
 ### If setup fails:
 1. Check the exact error message in logs
-2. Verify your email/password work on Felicity Solar website
-3. Ensure Plant ID is correct (visible in logs during setup)
+2. Verify your email/password hash work with the test script
+3. Ensure you're using the correct password hash format
 
 ## 📈 Energy Dashboard Integration
 

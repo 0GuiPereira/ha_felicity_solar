@@ -36,11 +36,12 @@ The integration provides the following sensors:
 The integration requires:
 
 - **Username/Email**: Your Felicity Solar account username or email
-- **Password**: Your Felicity Solar account password
-- **Plant ID**: Your solar plant ID (e.g., "11114725281235393") 
+- **Password Hash**: The encrypted password hash from your Felicity Solar account (not the plain text password)
 - **Scan Interval**: How often to update data in seconds (default: 30)
 
-The integration will automatically handle authentication token management, including automatic token refresh when needed.
+The integration will automatically:
+- Detect your plant ID from the API (no manual input needed)
+- Handle authentication token management, including automatic token refresh
 
 ## API Endpoints Used
 

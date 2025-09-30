@@ -25,11 +25,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Felicity Solar sensors."""
     username = config_entry.data.get("username")
-    password = config_entry.data.get("password")
-    plant_id = config_entry.data.get("plant_id", "11114725281235393")
+    password_hash = config_entry.data.get("password_hash")
+    plant_id = config_entry.data.get("plant_id")
     
     # Create shared auth instance
-    auth = FelicitySolarAuth(username, password)
+    auth = FelicitySolarAuth(username, password_hash)
     
     sensors = [
         FelicityCurrentPowerSensor(plant_id, auth),

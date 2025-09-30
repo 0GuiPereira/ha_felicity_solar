@@ -6,9 +6,8 @@ This script tests the API calls without Home Assistant to verify they work corre
 
 import requests
 import json
-import sys
-import os
 from datetime import datetime
+import getpass
 
 BASE_URL = "https://shine-api.felicitysolar.com"
 LOGIN_ENDPOINT = "/userlogin"
@@ -16,25 +15,6 @@ DEVICE_ENDPOINT = "/device/get_device_realtime_icon_template_info"
 PLANT_LIST_ENDPOINT = "/plant/list_plant"
 PLANT_DETAILS_ENDPOINT = "/plant/plantDetails"
 DATAENERGY_ENDPOINT = "/openApi/data/deviceDataEnergy"
-
-CONFIG_FILE = "config.json"
-
-def load_config():
-    """Load configuration from config.json file."""
-    if not os.path.isfile(CONFIG_FILE):
-        print(f"Configuration file {CONFIG_FILE} not found.")
-        print("Creating a sample config file...")
-        sample_config = {
-            "email": "your_email@example.com",
-            "password": "your_password"
-        }
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(sample_config, f, indent=2)
-        print(f"Please edit {CONFIG_FILE} with your credentials and run again.")
-        sys.exit(1)
-    
-    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
 
 def login(email, password):
     """Login to Felicity Solar API."""
@@ -198,22 +178,17 @@ def main():
     print("Felicity Solar API Test")
     print("=" * 50)
     
-    # Load configuration
-    try:
-        cfg = load_config()
-        email = cfg.get("email")
-        password = cfg.get("password")
-        
-        if not email or not password:
-            print("Please configure email and password in config.json")
-            return
-            
-    except Exception as e:
-        print(f"Configuration error: {e}")
+    # Get credentials from user input
+    print("Enter your Felicity Solar credentials:")
+    email = input("Email: ")
+    password_hash = getpass.getpass("Password Hash (hidden): ")
+    
+    if not email or not password_hash:
+        print("Both email and password hash are required!")
         return
     
     # Login
-    token = login(email, password)
+    token = login(email, password_hash)
     if not token:
         print("Login failed, cannot proceed with tests")
         return
