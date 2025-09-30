@@ -1,0 +1,9 @@
+{
+  "domain": "felicity_solar",
+  "name": "Felicity Solar",
+  "documentation": "https://github.com/0GuiPereira/ha_felicity_solar",
+  "requirements": ["requests"],
+  "codeowners": ["@0GuiPereira"],
+  "iot_class": "cloud_polling",
+  "version": "0.1.0"
+}
