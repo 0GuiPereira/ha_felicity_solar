@@ -26,6 +26,8 @@ class FelicitySolarAuth:
                 "version": "1.0"
             }
             
+            _LOGGER.debug(f"Login attempt for user: {self._username}")
+            
             response = requests.post(
                 BASE_URL + LOGIN_ENDPOINT,
                 json=payload,
@@ -34,12 +36,18 @@ class FelicitySolarAuth:
             response.raise_for_status()
             data = response.json()
             
+            _LOGGER.debug(f"Login response: {data}")
+            
             if data.get("code") == 200:
                 auth_data = data.get("data", {})
                 self._token = auth_data.get("token")
                 
-                _LOGGER.info("Successfully logged in to Felicity Solar API")
-                return True
+                if self._token:
+                    _LOGGER.info("Successfully logged in to Felicity Solar API")
+                    return True
+                else:
+                    _LOGGER.error("Login response missing access token")
+                    return False
             else:
                 _LOGGER.error(f"Login failed: {data.get('message', 'Unknown error')}")
                 return False

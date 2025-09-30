@@ -108,6 +108,11 @@ async def async_setup_entry(
 def _get_device_info(auth: FelicitySolarAuth):
     """Auto-detect plant and device information from API."""
     try:
+        # Login first to get fresh token
+        if not auth.login():
+            _LOGGER.error("Failed to login during device info retrieval")
+            return None
+            
         payload = {
             "pageNum": 1,
             "pageSize": 10,
@@ -130,6 +135,8 @@ def _get_device_info(auth: FelicitySolarAuth):
         if not headers:
             return None
             
+        _LOGGER.debug(f"Getting plant list with headers: {headers}")
+        
         response = requests.post(
             BASE_URL + PLANT_LIST_ENDPOINT,
             json=payload,
@@ -139,6 +146,8 @@ def _get_device_info(auth: FelicitySolarAuth):
         response.raise_for_status()
         data = response.json()
         
+        _LOGGER.debug(f"Plant list response: {data}")
+        
         if data.get("code") == 200 and data.get("data", {}).get("dataList"):
             # Get the first available plant and device
             for plant in data["data"]["dataList"]:
@@ -146,14 +155,17 @@ def _get_device_info(auth: FelicitySolarAuth):
                 if device_list:
                     plant_id = plant["id"]
                     device_sn = device_list[0]["deviceSn"]
+                    plant_name = plant.get("plantName", "Unknown")
                     battery_capacity = device_list[0].get("batteryCapacity", 0)
-                    _LOGGER.info(f"Auto-detected plant ID: {plant_id}, device: {device_sn}")
+                    _LOGGER.info(f"Auto-detected plant: '{plant_name}' (ID: {plant_id}), device: {device_sn}")
                     return {
                         "plantId": plant_id,
                         "deviceSn": device_sn, 
                         "deviceType": "OC",
-                        "batteryCapacity": battery_capacity
+                        "batteryCapacity": battery_capacity,
+                        "plantName": plant_name
                     }
+        _LOGGER.error("No plants with devices found in API response")
         return None
     except Exception as e:
         _LOGGER.error(f"Error getting device info: {e}")
@@ -184,6 +196,9 @@ class FelicitySolarSensorBase(SensorEntity):
                 _LOGGER.error("No authentication headers available")
                 return None
                 
+            _LOGGER.debug(f"Getting snapshot data with payload: {payload}")
+            _LOGGER.debug(f"Using headers: {headers}")
+                
             response = requests.post(
                 BASE_URL + DEVICE_SNAPSHOT_ENDPOINT,
                 json=payload,
@@ -193,11 +208,13 @@ class FelicitySolarSensorBase(SensorEntity):
             response.raise_for_status()
             data = response.json()
             
-            _LOGGER.debug(f"Snapshot data response code: {data.get('code')}")
+            _LOGGER.debug(f"Snapshot data response: {data}")
             
             if data.get("code") == 200 and data.get("data"):
                 return data["data"]
-            return None
+            else:
+                _LOGGER.error(f"Snapshot API error: {data.get('message', 'Unknown error')}")
+                return None
             
         except Exception as e:
             _LOGGER.error(f"Error fetching snapshot data: {e}")
