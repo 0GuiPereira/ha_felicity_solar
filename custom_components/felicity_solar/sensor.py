@@ -2,13 +2,13 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.const import (
     UnitOfPower,
     UnitOfEnergy,
-    PERCENTAGE,
-    ELECTRIC_POTENTIAL_VOLT,
-    ELECTRIC_CURRENT_AMPERE
+    UnitOfElectricPotential,
+    UnitOfElectricCurrent,
+    PERCENTAGE
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.config_entries import ConfigEntry
 
 from .const import DOMAIN, BASE_URL, PLANT_LIST_ENDPOINT, DEVICE_REALTIME_ENDPOINT, ORGAN_CODE
 from .auth import FelicitySolarAuth
@@ -20,7 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry,
+    config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Felicity Solar sensors."""
@@ -127,10 +127,14 @@ class FelicitySolarSensorBase(SensorEntity):
             _LOGGER.error(f"Error fetching device data: {e}")
             return None
     
-    def update(self):
+    async def async_update(self):
         """Update sensor data."""
-        self._plant_data = self.get_plant_data()
-        self._device_data = self.get_device_data()
+        import asyncio
+        loop = asyncio.get_event_loop()
+        
+        # Run the blocking API calls in executor
+        self._plant_data = await loop.run_in_executor(None, self.get_plant_data)
+        self._device_data = await loop.run_in_executor(None, self.get_device_data)
         self._attr_available = self._plant_data is not None
 
 class FelicityCurrentPowerSensor(FelicitySolarSensorBase):
@@ -193,7 +197,7 @@ class FelicityPvVoltageSensor(FelicitySolarSensorBase):
         self._string_index = string_index
         self._attr_name = f"Felicity Solar {string_name} Voltage"
         self._attr_unique_id = f"felicity_{plant_id}_{string_name.lower()}_voltage"
-        self._attr_native_unit_of_measurement = ELECTRIC_POTENTIAL_VOLT
+        self._attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
         self._attr_device_class = SensorDeviceClass.VOLTAGE
         self._attr_state_class = "measurement"
     
@@ -217,7 +221,7 @@ class FelicityPvCurrentSensor(FelicitySolarSensorBase):
         self._string_index = string_index
         self._attr_name = f"Felicity Solar {string_name} Current"
         self._attr_unique_id = f"felicity_{plant_id}_{string_name.lower()}_current"
-        self._attr_native_unit_of_measurement = ELECTRIC_CURRENT_AMPERE
+        self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
         self._attr_device_class = SensorDeviceClass.CURRENT
         self._attr_state_class = "measurement"
     
