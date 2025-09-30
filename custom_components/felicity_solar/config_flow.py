@@ -84,8 +84,7 @@ class FelicitySolarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = "cannot_connect"
         
         if not errors:
-            # Add the detected plant_id to the data
-            user_input["plant_id"] = plant_id
+            # Don't store plant_id - it will be auto-detected each time in sensor.py
             return self.async_create_entry(
                 title=f"Felicity Solar ({user_input['username']})",
                 data=user_input,

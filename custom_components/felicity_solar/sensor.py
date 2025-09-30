@@ -29,22 +29,22 @@ async def async_setup_entry(
     """Set up the Felicity Solar sensors v2.0."""
     username = config_entry.data.get("username")
     password_hash = config_entry.data.get("password_hash")
-    plant_id = config_entry.data.get("plant_id")
     scan_interval = config_entry.data.get("scan_interval", 30)
     
     # Create shared auth instance
     auth = FelicitySolarAuth(username, password_hash)
     
-    # First get device info to get device serial number
-    device_info = await hass.async_add_executor_job(_get_device_info, auth, plant_id)
+    # Auto-detect plant and device info from API
+    device_info = await hass.async_add_executor_job(_get_device_info, auth)
     if not device_info:
-        _LOGGER.error("Could not get device information for plant %s", plant_id)
+        _LOGGER.error("Could not get device information from API")
         return
     
+    plant_id = device_info.get("plantId")
     device_sn = device_info.get("deviceSn")
     device_type = device_info.get("deviceType", "OC")
     
-    _LOGGER.info(f"Setting up Felicity Solar v2.0 for device {device_sn}")
+    _LOGGER.info(f"Setting up Felicity Solar v2.0 for plant {plant_id}, device {device_sn}")
     
     # Create comprehensive sensors based on snapshot endpoint
     sensors = [
@@ -105,8 +105,8 @@ async def async_setup_entry(
     
     async_add_entities(sensors, True)
 
-def _get_device_info(auth: FelicitySolarAuth, plant_id: str):
-    """Get device information from plant list."""
+def _get_device_info(auth: FelicitySolarAuth):
+    """Auto-detect plant and device information from API."""
     try:
         payload = {
             "pageNum": 1,
@@ -140,11 +140,20 @@ def _get_device_info(auth: FelicitySolarAuth, plant_id: str):
         data = response.json()
         
         if data.get("code") == 200 and data.get("data", {}).get("dataList"):
+            # Get the first available plant and device
             for plant in data["data"]["dataList"]:
-                if plant["id"] == plant_id:
-                    device_list = plant.get("plantDeviceList", [])
-                    if device_list:
-                        return {"deviceSn": device_list[0]["deviceSn"], "deviceType": "OC"}
+                device_list = plant.get("plantDeviceList", [])
+                if device_list:
+                    plant_id = plant["id"]
+                    device_sn = device_list[0]["deviceSn"]
+                    battery_capacity = device_list[0].get("batteryCapacity", 0)
+                    _LOGGER.info(f"Auto-detected plant ID: {plant_id}, device: {device_sn}")
+                    return {
+                        "plantId": plant_id,
+                        "deviceSn": device_sn, 
+                        "deviceType": "OC",
+                        "batteryCapacity": battery_capacity
+                    }
         return None
     except Exception as e:
         _LOGGER.error(f"Error getting device info: {e}")

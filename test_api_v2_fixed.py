@@ -1,33 +1,13 @@
 #!/usr/bin/env python3
 """
 Test script for Felicity Solar API v2.0 with snapshot endpoint
-This tests the comprehensive snapshot endpoint for real-time data
+Auto-detects plant ID - no manual configuration needed
 """
 
 import requests
 import sys
 
-#    if not all([USERNAME != "YourUsernameHere", PASSWORD_HASH != "YourPasswordHashHere"]):
-        print("ERROR: Please update USERNAME and PASSWORD_HASH in this script")
-        print("Note: Plant ID is now auto-detected from API")
-        sys.exit(1)
-    
-    # Step 1: Login
-    print("Step 1: Login")
-    token = login()
-    if not token:
-        print("Login failed, exiting")
-        sys.exit(1)
-    
-    # Step 2: Auto-detect plant and get device info
-    print("\nStep 2: Auto-detect plant and device info")
-    device_info = get_device_info(token)
-    if not device_info:
-        print("Failed to get device info, exiting")
-        sys.exit(1)
-    
-    device_sn = device_info["device_sn"]
-    plant_id = device_info["plant_id"]replace these with your actual values
+# Configuration - replace these with your actual values  
 BASE_URL = "https://shine-api.felicitysolar.com"
 USERNAME = "YourUsernameHere"  # Replace with actual username
 PASSWORD_HASH = "YourPasswordHashHere"  # Replace with actual password hash
@@ -108,9 +88,10 @@ def get_device_info(token):
                 if device_list:
                     plant_id = plant["id"]
                     device_sn = device_list[0]["deviceSn"]
-                    print(f"Auto-detected plant ID: {plant_id}")
+                    plant_name = plant.get("plantName", "Unknown")
+                    print(f"Auto-detected plant: '{plant_name}' (ID: {plant_id})")
                     print(f"Found device serial number: {device_sn}")
-                    return {"plant_id": plant_id, "device_sn": device_sn}
+                    return {"plant_id": plant_id, "device_sn": device_sn, "plant_name": plant_name}
             print("No plants with devices found")
             return None
         else:
@@ -217,10 +198,11 @@ def get_device_snapshot(token, device_sn):
 def main():
     """Main test function"""
     print("=== Felicity Solar API v2.0 Test ===")
-    print("Testing snapshot endpoint for comprehensive real-time data\\n")
+    print("Testing snapshot endpoint with auto-detected plant ID\\n")
     
-    if not all([USERNAME != "YourUsernameHere", PASSWORD_HASH != "YourPasswordHashHere", PLANT_ID != "YourPlantIdHere"]):
-        print("ERROR: Please update USERNAME, PASSWORD_HASH, and PLANT_ID in this script")
+    if not all([USERNAME != "YourUsernameHere", PASSWORD_HASH != "YourPasswordHashHere"]):
+        print("ERROR: Please update USERNAME and PASSWORD_HASH in this script")
+        print("Note: Plant ID is now auto-detected from API")
         sys.exit(1)
     
     # Step 1: Login
@@ -230,15 +212,19 @@ def main():
         print("Login failed, exiting")
         sys.exit(1)
     
-    # Step 2: Get device serial number from plant list
-    print("\\nStep 2: Get device serial number")
-    device_sn = get_plant_list(token)
-    if not device_sn:
-        print("Failed to get device serial number, exiting")
+    # Step 2: Auto-detect plant and get device info
+    print("\\nStep 2: Auto-detect plant and device info")
+    device_info = get_device_info(token)
+    if not device_info:
+        print("Failed to get device info, exiting")
         sys.exit(1)
     
+    device_sn = device_info["device_sn"]
+    plant_id = device_info["plant_id"]
+    plant_name = device_info["plant_name"]
+    
     # Step 3: Get comprehensive snapshot data
-    print("\\nStep 3: Get device snapshot data")
+    print(f"\\nStep 3: Get device snapshot data for '{plant_name}'")
     success = get_device_snapshot(token, device_sn)
     if not success:
         print("Failed to get device snapshot")
@@ -247,6 +233,8 @@ def main():
     print("\\n=== Test completed successfully! ===")
     print("The v2.0 snapshot endpoint provides comprehensive real-time data")
     print("including AC input/output, temperatures, battery info, and more!")
+    print(f"✅ Plant auto-detected: '{plant_name}' (ID: {plant_id})")
+    print(f"✅ Device serial number: {device_sn}")
 
 if __name__ == "__main__":
     main()
