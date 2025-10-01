@@ -65,6 +65,7 @@ class FelicitySolarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required("username"): str,
                     vol.Required("password_hash"): str,
                     vol.Optional("scan_interval", default=30): int,
+                    vol.Optional("device_name", default=""): str,
                 }),
             )
 
@@ -96,6 +97,7 @@ class FelicitySolarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required("username", default=user_input.get("username", "")): str,
                 vol.Required("password_hash"): str,
                 vol.Optional("scan_interval", default=user_input.get("scan_interval", 30)): int,
+                vol.Optional("device_name", default=user_input.get("device_name", "")): str,
             }),
             errors=errors,
         )

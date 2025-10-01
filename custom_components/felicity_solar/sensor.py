@@ -63,7 +63,9 @@ async def async_setup_entry(
         device_sn = device_info.get("deviceSn")
         device_type = device_info.get("deviceType", "OC")
         device_identifier = device_info.get("deviceIdentifier")
-        
+
+        # Inject device_name from config_entry if present
+        device_info["device_name"] = config_entry.data.get("device_name", "")
         _LOGGER.info(f"Creating sensors for device: {device_identifier}")
         
         # Create comprehensive sensors based on snapshot endpoint for this device
@@ -238,7 +240,21 @@ class FelicitySolarSensorBase(SensorEntity):
             "model": device_model,
             "sw_version": "v2.0"
         }
-        
+
+    @property
+    def name(self):
+        """Return the display name for the sensor."""
+        # Use custom device name if provided, else fallback to serial number
+        device_name = self._device_info.get("device_name") or self._device_sn
+        # Use the sensor type from the static _attr_name (set in child class)
+        if hasattr(self, "_attr_name") and self._attr_name:
+            # Remove the device_identifier part from _attr_name
+            sensor_type = self._attr_name.replace(self._device_sn, "").strip()
+            # Remove leading/trailing dashes, underscores, or spaces
+            sensor_type = sensor_type.lstrip("-_ ").rstrip("-_ ")
+            return f"{device_name} {sensor_type}".strip()
+        return device_name
+
     @property
     def should_poll(self) -> bool:
         """Return True if entity should be polled."""
@@ -247,7 +263,7 @@ class FelicitySolarSensorBase(SensorEntity):
     @property
     def scan_interval(self) -> timedelta:
         """Return the scan interval for this sensor."""
-        return timedelta(seconds(self._scan_interval))
+        return timedelta(seconds=self._scan_interval)
     
     def _get_device_identifier(self):
         """Get device identifier, fetching from snapshot API if not available."""
