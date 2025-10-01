@@ -74,7 +74,7 @@ async def async_setup_entry(
             FelicityPv2PowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityPv3PowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityPv4PowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-        
+
             # PV Voltage & Current
             FelicityPv1VoltageSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityPv2VoltageSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
@@ -82,46 +82,43 @@ async def async_setup_entry(
             FelicityPv1CurrentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityPv2CurrentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityPv3CurrentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-            
+
             # AC Input (Grid)
             FelicityAcInputVoltageSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityAcInputCurrentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityAcInputFrequencySensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityAcInputPowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-            
+
             # AC Output (Load)
             FelicityAcOutputVoltageSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityAcOutputCurrentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityAcOutputFrequencySensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityAcOutputPowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-            
+
             # Energy Totals
             FelicityTotalEnergySensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityTodayEnergySensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityGridFeedTodaySensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityGridFeedTotalSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-            
+
             # Temperatures
             FelicityTempMaxSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityDeviceTempMaxSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-            
+
             # Load & Grid
             FelicityLoadPercentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityMeterPowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-            
+
             # Device Status
             FelicityDeviceStatusSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
             FelicityWifiSignalSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
+
+            # Battery Sensors
+            FelicityBatterySocSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
+            FelicityBatteryVoltageSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
+            FelicityBatteryCurrentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
+            FelicityBatteryPowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
         ]
-        
-        # Add battery sensors if battery is present
-        if device_info.get("batteryCapacity") and float(device_info.get("batteryCapacity", 0)) > 0:
-            device_sensors.extend([
-                FelicityBatterySocSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-                FelicityBatteryVoltageSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-                FelicityBatteryCurrentSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-                FelicityBatteryPowerSensor(plant_id, auth, device_sn, device_type, scan_interval, device_info),
-            ])
         
         # Add this device's sensors to the main list
         all_sensors.extend(device_sensors)
@@ -187,12 +184,14 @@ def _get_all_devices_info(auth: FelicitySolarAuth):
                 
                 for device in device_list:
                     device_sn = device.get("deviceSn")
-                    device_model = device.get("deviceModel", "Unknown")
                     battery_capacity = device.get("batteryCapacity", 0)
                     device_type = device.get("deviceType", "OC")
-                    
+
+                    # Always use SN as model and identifier
+                    device_model = device_sn
+
                     if device_sn:
-                        device_identifier = f"{device_model}-{device_sn}"
+                        device_identifier = device_sn
                         devices_info.append({
                             "plantId": plant_id,
                             "plantName": plant_name,
@@ -248,7 +247,7 @@ class FelicitySolarSensorBase(SensorEntity):
     @property
     def scan_interval(self) -> timedelta:
         """Return the scan interval for this sensor."""
-        return timedelta(seconds=self._scan_interval)
+        return timedelta(seconds(self._scan_interval))
     
     def _get_device_identifier(self):
         """Get device identifier, fetching from snapshot API if not available."""
