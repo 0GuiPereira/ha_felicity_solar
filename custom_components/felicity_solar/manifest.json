@@ -1,10 +1,12 @@
 {
   "domain": "felicity_solar",
   "name": "Felicity Solar",
-  "documentation": "https://github.com/0GuiPereira/ha_felicity_solar",
-  "requirements": ["requests"],
   "codeowners": ["@0GuiPereira"],
-  "iot_class": "cloud_polling",
   "config_flow": true,
-  "version": "3.0.0"
+  "documentation": "https://github.com/0GuiPereira/ha_felicity_solar",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/0GuiPereira/ha_felicity_solar/issues",
+  "requirements": ["requests==2.31.0"],
+  "version": "4.0.0",
+  "integration_type": "device"
 }
