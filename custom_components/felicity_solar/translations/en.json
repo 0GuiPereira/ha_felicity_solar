@@ -1,20 +1,24 @@
 {
+  "title": "Felicity Solar",
   "config": {
     "step": {
       "user": {
         "title": "Felicity Solar Setup",
-        "description": "Enter your Felicity Solar credentials. Plant ID will be detected automatically.",
+        "description": "Configure your Felicity Solar integration. The plant will be detected automatically.",
         "data": {
-          "username": "Username/Email",
-          "password_hash": "Password Hash", 
-          "scan_interval": "Scan Interval (seconds)"
+          "username": "Username or Email",
+          "password_hash": "Password Hash",
+          "scan_interval": "Update interval (seconds)"
         }
       }
     },
     "error": {
-      "invalid_auth": "Invalid username or password hash",
-      "cannot_connect": "Cannot connect to Felicity Solar API",
-      "no_plants_found": "No solar plants found in your account"
+      "invalid_auth": "Invalid username or password hash. Please check your credentials.",
+      "cannot_connect": "Cannot connect to the Felicity Solar API. Please check your internet connection.",
+      "no_plants_found": "No solar plants found in your account."
+    },
+    "abort": {
+      "already_configured": "This Felicity Solar account is already configured."
     }
   }
 }

@@ -1,0 +1,24 @@
+{
+  "title": "Felicity Solar",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configuração do Felicity Solar",
+        "description": "Configure a integração Felicity Solar. A planta será detetada automaticamente.",
+        "data": {
+          "username": "Utilizador ou E-mail",
+          "password_hash": "Hash da Palavra-passe",
+          "scan_interval": "Intervalo de atualização (segundos)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Utilizador ou hash da palavra-passe inválidos. Verifique as credenciais.",
+      "cannot_connect": "Não foi possível ligar à API do Felicity Solar. Verifique a sua ligação à internet.",
+      "no_plants_found": "Não foram encontradas plantas solares na sua conta."
+    },
+    "abort": {
+      "already_configured": "Esta conta Felicity Solar já está configurada."
+    }
+  }
+}
