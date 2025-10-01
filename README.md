@@ -1,12 +1,10 @@
 # Installation Guide
 
 ### Method 1: HACS Installation
-1. Add this repository as a custom repository in HACS
-<pre>
-https://github.com/0GuiPereira/ha_felicity_solar
-</pre>
-2. Install "Felicity Solar" from HACS
-3. Restart Home Assistant
+1. Open `Integrations` inside the HACS configuration.
+1. Click on the 3 dots in the top-right corner and select `Custom Repositories`.
+1. Paste in https://github.com/0GuiPereira/ha_felicity_solar and select `Integration` as type.
+1. Once installation is complete, restart Home Assistant.
 4. Go to **Settings** → **Devices & Services** → **Add Integration**
 5. Search for "Felicity Solar"
 6. Enter your credentials:
