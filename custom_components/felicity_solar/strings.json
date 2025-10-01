@@ -1,23 +1,10 @@
 {
+  "title": "Felicity Solar",
   "config": {
     "step": {
       "user": {
-        "title": "Set up Felicity Solar",
-        "description": "Connect your Felicity Solar inverter to Home Assistant. Your plant ID will be automatically detected.",
-        "data": {
-          "username": "Username or Email",
-          "password_hash": "Password Hash",
-          "scan_interval": "Update interval (seconds)"
-        },
-        "data_description": {
-          "username": "The email address or username for your Felicity Solar account",
-          "password_hash": "The encrypted password hash from your Felicity Solar account (not your plain text password)",
-          "scan_interval": "How often to fetch data from the API (10-300 seconds)"
-        }
-      },
-      "reconfigure": {
-        "title": "Reconfigure Felicity Solar",
-        "description": "Update your Felicity Solar credentials or settings",
+        "title": "Felicity Solar Setup",
+        "description": "Configure your Felicity Solar integration. The system will automatically detect your plant ID.",
         "data": {
           "username": "Username or Email",
           "password_hash": "Password Hash",
@@ -26,128 +13,12 @@
       }
     },
     "error": {
-      "invalid_auth": "Invalid credentials. Please check your username and password hash.",
-      "cannot_connect": "Unable to connect to Felicity Solar API. Please check your internet connection and try again.",
-      "no_devices": "No solar inverters found in your account. Please ensure your devices are properly registered.",
-      "unknown": "An unexpected error occurred. Please try again."
+      "invalid_auth": "Invalid username or password hash. Please check your credentials.",
+      "cannot_connect": "Cannot connect to Felicity Solar API. Please check your internet connection.",
+      "no_plants_found": "No solar plants found in your account."
     },
     "abort": {
-      "already_configured": "This Felicity Solar account is already configured.",
-      "reconfigure_successful": "Configuration updated successfully"
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Felicity Solar Options",
-        "description": "Configure advanced options for your Felicity Solar integration",
-        "data": {
-          "scan_interval": "Update interval (seconds)"
-        }
-      }
-    }
-  },
-  "entity": {
-    "sensor": {
-      "pvTotalPower": {
-        "name": "PV total power"
-      },
-      "pvPower": {
-        "name": "PV1 power"
-      },
-      "pv2Power": {
-        "name": "PV2 power"
-      },
-      "pv3Power": {
-        "name": "PV3 power"
-      },
-      "pv4Power": {
-        "name": "PV4 power"
-      },
-      "pvVolt": {
-        "name": "PV1 voltage"
-      },
-      "pv2Volt": {
-        "name": "PV2 voltage"
-      },
-      "pv3Volt": {
-        "name": "PV3 voltage"
-      },
-      "pvInCurr": {
-        "name": "PV1 current"
-      },
-      "pv2InCurr": {
-        "name": "PV2 current"
-      },
-      "pv3InCurr": {
-        "name": "PV3 current"
-      },
-      "acRInVolt": {
-        "name": "AC input voltage"
-      },
-      "acRInCurr": {
-        "name": "AC input current"
-      },
-      "acRInFreq": {
-        "name": "AC input frequency"
-      },
-      "acRInPower": {
-        "name": "AC input power"
-      },
-      "acROutVolt": {
-        "name": "AC output voltage"
-      },
-      "acROutCurr": {
-        "name": "AC output current"
-      },
-      "acROutFreq": {
-        "name": "AC output frequency"
-      },
-      "acTotalOutActPower": {
-        "name": "AC output power"
-      },
-      "totalEnergy": {
-        "name": "Total energy"
-      },
-      "ePvToday": {
-        "name": "Today energy"
-      },
-      "eGridFeedToday": {
-        "name": "Grid feed today"
-      },
-      "eGridFeedTotal": {
-        "name": "Grid feed total"
-      },
-      "tempMax": {
-        "name": "Temperature max"
-      },
-      "devTempMax": {
-        "name": "Device temperature max"
-      },
-      "loadPercent": {
-        "name": "Load percentage"
-      },
-      "meterPower": {
-        "name": "Meter power"
-      },
-      "status": {
-        "name": "Device status"
-      },
-      "wifiSignal": {
-        "name": "WiFi signal"
-      },
-      "battSoc": {
-        "name": "Battery SOC"
-      },
-      "battVolt": {
-        "name": "Battery voltage"
-      },
-      "battCurr": {
-        "name": "Battery current"
-      },
-      "bmsPower": {
-        "name": "Battery power"
-      }
+      "already_configured": "This Felicity Solar account is already configured."
     }
   }
 }

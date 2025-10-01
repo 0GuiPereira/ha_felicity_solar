@@ -1,6 +1,5 @@
 DOMAIN = "felicity_solar"
 BASE_URL = "https://shine-api.felicitysolar.com"
-
 LOGIN_ENDPOINT = "/userlogin"
 PLANT_LIST_ENDPOINT = "/plant/list_plant"
 DEVICE_SNAPSHOT_ENDPOINT = "/device/get_device_snapshot"
