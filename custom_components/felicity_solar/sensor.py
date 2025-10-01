@@ -28,7 +28,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Felicity Solar sensors v2.0."""
+    """Set up the Felicity Solar sensors."""
     username = config_entry.data.get("username")
     password_hash = config_entry.data.get("password_hash")
     scan_interval = config_entry.data.get("scan_interval", 30)
@@ -39,7 +39,7 @@ async def async_setup_entry(
     # Create shared auth instance
     auth = FelicitySolarAuth(username, password_hash)
     
-    _LOGGER.info("Starting Felicity Solar v2.0 setup...")
+    _LOGGER.info("Starting Felicity Solar setup...")
     
     # Get all devices info from API
     try:
@@ -53,7 +53,7 @@ async def async_setup_entry(
         _LOGGER.error("Could not get any device information from API")
         return
     
-    _LOGGER.info(f"Setting up Felicity Solar v2.0 for {len(devices_info)} devices, scan interval: {scan_interval}s")
+    _LOGGER.info(f"Setting up Felicity Solar for {len(devices_info)} devices, scan interval: {scan_interval}s")
     
     # Create sensors for each device
     all_sensors = []
@@ -211,7 +211,7 @@ def _get_all_devices_info(auth: FelicitySolarAuth):
         return []
 
 class FelicitySolarSensorBase(SensorEntity):
-    """Base class for Felicity Solar sensors v2.0."""
+    """Base class for Felicity Solar sensors."""
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         self._plant_id = plant_id
@@ -232,24 +232,31 @@ class FelicitySolarSensorBase(SensorEntity):
     def device_info(self):
         """Return device information to link entities with devices."""
         device_identifier = self._get_device_identifier()
-        device_model = self._device_info.get("deviceModel", "Unknown")
+        device_model = self._get_string_value("deviceModel", self._device_info.get("deviceModel", "Unknown"))
+        configuration_url = f"https://shine.felicityess.com/login"
+        
         return {
             "identifiers": {(DOMAIN, device_identifier)},
-            "name": device_identifier,
+            "name": device_model,
             "manufacturer": "Felicity Solar", 
-            "model": device_model,
-            "sw_version": "v2.0"
+            "model": device_identifier,
+            "configuration_url": configuration_url
         }
 
     @property
     def name(self):
         """Return the display name for the sensor."""
-        # Use custom device name if provided, else fallback to serial number
-        device_name = self._device_info.get("device_name") or self._device_sn
+        # Get custom device name from config flow, or fallback to deviceModel from API
+        device_name = self._device_info.get("device_name")
+        if not device_name or device_name.strip() == "":
+            # Fallback to deviceModel from snapshot data or device_info
+            device_name = self._get_string_value("deviceModel", self._device_info.get("deviceModel", "Unknown"))
+        
         # Use the sensor type from the static _attr_name (set in child class)
         if hasattr(self, "_attr_name") and self._attr_name:
-            # Remove the device_identifier part from _attr_name
-            sensor_type = self._attr_name.replace(self._device_sn, "").strip()
+            # Remove the device_identifier part from _attr_name to get just the sensor type
+            device_identifier = self._get_device_identifier()
+            sensor_type = self._attr_name.replace(device_identifier, "").strip()
             # Remove leading/trailing dashes, underscores, or spaces
             sensor_type = sensor_type.lstrip("-_ ").rstrip("-_ ")
             return f"{device_name} {sensor_type}".strip()

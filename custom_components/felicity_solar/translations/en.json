@@ -8,7 +8,8 @@
         "data": {
           "username": "Username or Email",
           "password_hash": "Password Hash",
-          "scan_interval": "Update interval (seconds)"
+          "scan_interval": "Update interval (seconds)",
+          "device_name": "Device Name (optional)"
         }
       }
     },
