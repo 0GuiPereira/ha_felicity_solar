@@ -223,14 +223,14 @@ class FelicitySolarSensorBase(SensorEntity):
         self._device_info = device_info or {}
         
         # Set up device info for Home Assistant device registry
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         device_model = self._device_info.get("deviceModel", "Unknown")
         plant_name = self._device_info.get("plantName", "Unknown Plant")
         
     @property  
     def device_info(self):
         """Return device information to link entities with devices."""
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{self._device_sn}")
+        device_identifier = self._get_device_identifier()
         device_model = self._device_info.get("deviceModel", "Unknown")
         return {
             "identifiers": {(DOMAIN, device_identifier)},
@@ -249,6 +249,66 @@ class FelicitySolarSensorBase(SensorEntity):
     def scan_interval(self) -> timedelta:
         """Return the scan interval for this sensor."""
         return timedelta(seconds=self._scan_interval)
+    
+    def _get_device_identifier(self):
+        """Get device identifier, fetching from snapshot API if not available."""
+        # First try to get from device_info
+        if self._device_info.get("deviceIdentifier"):
+            return self._device_info.get("deviceIdentifier")
+        
+        # If not available, try to get device model from snapshot API
+        try:
+            device_model = self._get_device_model_from_snapshot()
+            if device_model and device_model != "Unknown":
+                device_identifier = f"{device_model}-{self._device_sn}"
+                # Update device_info with the found information
+                self._device_info["deviceModel"] = device_model
+                self._device_info["deviceIdentifier"] = device_identifier
+                return device_identifier
+        except Exception as e:
+            _LOGGER.debug(f"Could not get device model from snapshot: {e}")
+        
+        # Fallback to Unknown
+        return f"Unknown-{self._device_sn}"
+    
+    def _get_device_model_from_snapshot(self):
+        """Get device model from snapshot API."""
+        try:
+            # Login if needed
+            if not self._auth.get_valid_token():
+                if not self._auth.login():
+                    return "Unknown"
+            
+            payload = {
+                "deviceSn": self._device_sn,
+                "deviceType": self._device_type,
+                "dateStr": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            
+            headers = self._auth.get_auth_headers()
+            if not headers:
+                return "Unknown"
+                
+            response = requests.post(
+                BASE_URL + DEVICE_SNAPSHOT_ENDPOINT,
+                json=payload,
+                headers=headers,
+                timeout=15
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("code") == 200 and data.get("data"):
+                device_model = data["data"].get("deviceModel")
+                if device_model:
+                    _LOGGER.info(f"Retrieved device model from snapshot API: {device_model} for device {self._device_sn}")
+                    return device_model
+            
+            return "Unknown"
+            
+        except Exception as e:
+            _LOGGER.debug(f"Error getting device model from snapshot: {e}")
+            return "Unknown"
     
     def get_snapshot_data(self):
         """Get device snapshot data from API."""
@@ -338,7 +398,7 @@ class FelicityPvTotalPowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         # Sanitize device identifier for unique_id (replace special characters)
         sanitized_id = device_identifier.replace("-", "_").replace(" ", "_").lower()
         self._attr_name = f"{device_identifier} PV Total Power"
@@ -356,7 +416,7 @@ class FelicityPv1PowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV1 Power"
         sanitized_id = device_identifier.replace("-", "_").replace(" ", "_").lower()
         self._attr_unique_id = f"felicity_{sanitized_id}_pv1_power"
@@ -373,7 +433,7 @@ class FelicityPv2PowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV2 Power"
         self._attr_unique_id = f"felicity_{device_identifier}_pv2_power"
         self._attr_native_unit_of_measurement = UnitOfPower.WATT
@@ -389,7 +449,7 @@ class FelicityPv3PowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV3 Power"
         self._attr_unique_id = f"felicity_{device_identifier}_pv3_power"
         self._attr_native_unit_of_measurement = UnitOfPower.WATT
@@ -405,7 +465,7 @@ class FelicityPv4PowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV4 Power"
         self._attr_unique_id = f"felicity_{device_identifier}_pv4_power"
         self._attr_native_unit_of_measurement = UnitOfPower.WATT
@@ -422,7 +482,7 @@ class FelicityPv1VoltageSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV1 Voltage"
         self._attr_unique_id = f"felicity_{device_identifier}_pv1_voltage"
         self._attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
@@ -438,7 +498,7 @@ class FelicityPv2VoltageSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV2 Voltage"
         self._attr_unique_id = f"felicity_{device_identifier}_pv2_voltage"
         self._attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
@@ -454,7 +514,7 @@ class FelicityPv3VoltageSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV3 Voltage"
         self._attr_unique_id = f"felicity_{device_identifier}_pv3_voltage"
         self._attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
@@ -471,7 +531,7 @@ class FelicityPv1CurrentSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV1 Current"
         self._attr_unique_id = f"felicity_{device_identifier}_pv1_current"
         self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
@@ -487,7 +547,7 @@ class FelicityPv2CurrentSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV2 Current"
         self._attr_unique_id = f"felicity_{device_identifier}_pv2_current"
         self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
@@ -503,7 +563,7 @@ class FelicityPv3CurrentSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} PV3 Current"
         self._attr_unique_id = f"felicity_{device_identifier}_pv3_current"
         self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
@@ -520,7 +580,7 @@ class FelicityAcInputVoltageSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Input Voltage"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_input_voltage"
         self._attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
@@ -536,7 +596,7 @@ class FelicityAcInputCurrentSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Input Current"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_input_current"
         self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
@@ -552,7 +612,7 @@ class FelicityAcInputFrequencySensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Input Frequency"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_input_frequency"
         self._attr_native_unit_of_measurement = UnitOfFrequency.HERTZ
@@ -568,7 +628,7 @@ class FelicityAcInputPowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Input Power"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_input_power"
         self._attr_native_unit_of_measurement = UnitOfPower.WATT
@@ -585,7 +645,7 @@ class FelicityAcOutputVoltageSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Output Voltage"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_output_voltage"
         self._attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
@@ -601,7 +661,7 @@ class FelicityAcOutputCurrentSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Output Current"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_output_current"
         self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
@@ -617,7 +677,7 @@ class FelicityAcOutputFrequencySensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Output Frequency"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_output_frequency"
         self._attr_native_unit_of_measurement = UnitOfFrequency.HERTZ
@@ -633,7 +693,7 @@ class FelicityAcOutputPowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} AC Output Power"
         self._attr_unique_id = f"felicity_{device_identifier}_ac_output_power"
         self._attr_native_unit_of_measurement = UnitOfPower.WATT
@@ -650,7 +710,7 @@ class FelicityTotalEnergySensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Total Energy"
         self._attr_unique_id = f"felicity_{device_identifier}_total_energy"
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
@@ -666,7 +726,7 @@ class FelicityTodayEnergySensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Today Energy"
         self._attr_unique_id = f"felicity_{device_identifier}_today_energy"
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
@@ -682,7 +742,7 @@ class FelicityGridFeedTodaySensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Grid Feed Today"
         self._attr_unique_id = f"felicity_{device_identifier}_grid_feed_today"
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
@@ -698,7 +758,7 @@ class FelicityGridFeedTotalSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Grid Feed Total"
         self._attr_unique_id = f"felicity_{device_identifier}_grid_feed_total"
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
@@ -715,7 +775,7 @@ class FelicityTempMaxSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Temperature Max"
         self._attr_unique_id = f"felicity_{device_identifier}_temp_max"
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -731,7 +791,7 @@ class FelicityDeviceTempMaxSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Device Temperature Max"
         self._attr_unique_id = f"felicity_{device_identifier}_device_temp_max"
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -748,7 +808,7 @@ class FelicityLoadPercentSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Load Percentage"
         self._attr_unique_id = f"felicity_{device_identifier}_load_percent"
         self._attr_native_unit_of_measurement = PERCENTAGE
@@ -763,7 +823,7 @@ class FelicityMeterPowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Meter Power"
         self._attr_unique_id = f"felicity_{device_identifier}_meter_power"
         self._attr_native_unit_of_measurement = UnitOfPower.WATT
@@ -780,7 +840,7 @@ class FelicityDeviceStatusSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Device Status"
         self._attr_unique_id = f"felicity_{device_identifier}_device_status"
     
@@ -793,7 +853,7 @@ class FelicityWifiSignalSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} WiFi Signal"
         self._attr_unique_id = f"felicity_{device_identifier}_wifi_signal"
         self._attr_native_unit_of_measurement = "dBm"
@@ -810,7 +870,7 @@ class FelicityBatterySocSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Battery SOC"
         self._attr_unique_id = f"felicity_{device_identifier}_battery_soc"
         self._attr_native_unit_of_measurement = PERCENTAGE
@@ -826,7 +886,7 @@ class FelicityBatteryVoltageSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Battery Voltage"
         self._attr_unique_id = f"felicity_{device_identifier}_battery_voltage"
         self._attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
@@ -842,7 +902,7 @@ class FelicityBatteryCurrentSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Battery Current"
         self._attr_unique_id = f"felicity_{device_identifier}_battery_current"
         self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
@@ -858,7 +918,7 @@ class FelicityBatteryPowerSensor(FelicitySolarSensorBase):
     
     def __init__(self, plant_id: str, auth: FelicitySolarAuth, device_sn: str, device_type: str, scan_interval: int = 30, device_info: dict = None):
         super().__init__(plant_id, auth, device_sn, device_type, scan_interval, device_info)
-        device_identifier = self._device_info.get("deviceIdentifier", f"Unknown-{device_sn}")
+        device_identifier = self._get_device_identifier()
         self._attr_name = f"{device_identifier} Battery Power"
         self._attr_unique_id = f"felicity_{device_identifier}_battery_power"
         self._attr_native_unit_of_measurement = UnitOfPower.WATT
